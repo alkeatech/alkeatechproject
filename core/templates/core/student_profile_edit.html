@@ -1,0 +1,71 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Edit Profile - AlkeaTech</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50 text-gray-900">
+    <nav class="bg-white shadow sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center">
+                <img src="https://cdn-icons-png.flaticon.com/512/2721/2721269.png" alt="AlkeaTech Logo" class="h-8 w-8 mr-2"/>
+                <span class="font-bold text-xl text-blue-700">AlkeaTech</span>
+            </div>
+            <div class="space-x-6">
+                <a href="/" class="text-gray-700 hover:text-blue-700 font-medium">Home</a>
+                <a href="/courses/" class="text-gray-700 hover:text-blue-700 font-medium">Courses</a>
+                <a href="/student/dashboard/" class="text-blue-700 font-medium">Dashboard</a>
+            </div>
+        </div>
+    </nav>
+    <main class="max-w-2xl mx-auto px-4 py-8 min-h-screen">
+        <h2 class="text-2xl font-bold text-blue-700 mb-4">Edit Profile</h2>
+        <form method="post" enctype="multipart/form-data" class="bg-white rounded-lg shadow p-6">
+            {% csrf_token %}
+            <div class="mb-2">
+                <label class="block font-medium">Profile Picture</label>
+                {% if student.profile_pic %}
+                <img src="{{ student.profile_pic.url }}" alt="Profile Picture" class="h-16 w-16 rounded-full object-cover mb-2 border"/>
+                {% endif %}
+                <input type="file" name="profile_pic" accept="image/*" class="w-full border rounded px-2 py-1"/>
+            </div>
+            <div class="mb-2">
+                <label class="block font-medium">Name *</label>
+                <input type="text" name="name" value="{{ student.name }}" required class="w-full border rounded px-2 py-1"/>
+            </div>
+            <div class="mb-2">
+                <label class="block font-medium">Email *</label>
+                <input type="email" name="email" value="{{ student.email }}" required class="w-full border rounded px-2 py-1"/>
+            </div>
+            <div class="mb-2">
+                <label class="block font-medium">Phone *</label>
+                <input type="text" name="phone" value="{{ student.phone }}" required class="w-full border rounded px-2 py-1"/>
+            </div>
+            <div class="mb-2">
+                <label class="block font-medium">Password (leave blank to keep current)</label>
+                <input type="password" name="password" class="w-full border rounded px-2 py-1"/>
+            </div>
+            <div class="mb-2">
+                <label class="block font-medium">Registered Course(s)</label>
+                <select name="registered_courses" multiple class="w-full border rounded px-2 py-1 h-24">
+                    {% for course in courses %}
+                    <option value="{{ course.id }}" {% if course in student.registered_courses.all %}selected{% endif %}>{{ course.title }}</option>
+                    {% endfor %}
+                </select>
+                <span class="text-xs text-gray-500">Hold Ctrl (Windows) or Cmd (Mac) to select multiple</span>
+            </div>
+            <div class="mb-2">
+                <label class="block font-medium">Session Preference</label>
+                <select name="session_pref" class="w-full border rounded px-2 py-1">
+                    <option value="Online" {% if student.session_pref == 'Online' %}selected{% endif %}>Online</option>
+                    <option value="Onsite" {% if student.session_pref == 'Onsite' %}selected{% endif %}>Onsite</option>
+                </select>
+            </div>
+            <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded shadow hover:bg-blue-700 font-semibold mt-2">Save Changes</button>
+        </form>
+    </main>
+</body>
+</html> 

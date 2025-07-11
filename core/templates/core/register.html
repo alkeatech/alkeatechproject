@@ -1,0 +1,93 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Register - AlkeaTech</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50 text-gray-900">
+    <nav class="bg-white shadow sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center">
+                <img src="https://cdn-icons-png.flaticon.com/512/2721/2721269.png" alt="AlkeaTech Logo" class="h-8 w-8 mr-2"/>
+                <span class="font-bold text-xl text-blue-700">AlkeaTech</span>
+            </div>
+            <div class="space-x-6">
+                <a href="/" class="text-gray-700 hover:text-blue-700 font-medium">Home</a>
+                <a href="/courses/" class="text-gray-700 hover:text-blue-700 font-medium">Courses</a>
+                <a href="/register/" class="text-blue-700 font-medium">Register</a>
+                <a href="/contact/" class="text-gray-700 hover:text-blue-700 font-medium">Contact</a>
+            </div>
+        </div>
+    </nav>
+    <main class="max-w-2xl mx-auto px-4 py-8 min-h-screen">
+        <div id="toast-container" aria-live="polite" aria-atomic="true" class="fixed top-4 right-4 z-50"></div>
+        <h2 class="text-2xl font-bold text-blue-700 mb-4">Student Registration</h2>
+        {% if messages %}
+            <script>
+                document.addEventListener('DOMContentLoaded', function() {
+                    {% for message in messages %}
+                    showToast("{{ message|escapejs }}");
+                    {% endfor %}
+                });
+            </script>
+        {% endif %}
+        <form method="post" class="bg-white rounded-lg shadow p-6" enctype="multipart/form-data" aria-label="Student Registration Form">
+            {% csrf_token %}
+            <div class="mb-2">
+                <label class="block font-medium">Profile Picture</label>
+                <input type="file" name="profile_pic" accept="image/*" class="w-full border rounded px-2 py-1"/>
+            </div>
+            <div class="mb-2">
+                <label class="block font-medium">Name *</label>
+                <input type="text" name="name" required class="w-full border rounded px-2 py-1"/>
+            </div>
+            <div class="mb-2">
+                <label class="block font-medium">Email *</label>
+                <input type="email" name="email" required class="w-full border rounded px-2 py-1"/>
+            </div>
+            <div class="mb-2">
+                <label class="block font-medium">Phone *</label>
+                <input type="text" name="phone" required class="w-full border rounded px-2 py-1"/>
+            </div>
+            <div class="mb-2">
+                <label class="block font-medium">Password *</label>
+                <input type="password" name="password" required class="w-full border rounded px-2 py-1"/>
+            </div>
+            <div class="mb-2">
+                <label class="block font-medium">Registered Course(s) *</label>
+                <select name="registered_courses" multiple required class="w-full border rounded px-2 py-1 h-24">
+                    {% for course in courses %}
+                    <option value="{{ course.id }}">{{ course.title }}</option>
+                    {% endfor %}
+                </select>
+                <span class="text-xs text-gray-500">Hold Ctrl (Windows) or Cmd (Mac) to select multiple</span>
+            </div>
+            <div class="mb-2">
+                <label class="block font-medium">Session Preference</label>
+                <select name="session_pref" class="w-full border rounded px-2 py-1">
+                    <option value="Online">Online</option>
+                    <option value="Onsite">Onsite</option>
+                </select>
+            </div>
+            <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded shadow hover:bg-blue-700 font-semibold mt-2">Register</button>
+        </form>
+    </main>
+    <script>
+    function showToast(msg) {
+        var container = document.getElementById('toast-container');
+        var toast = document.createElement('div');
+        toast.className = 'bg-green-600 text-white px-4 py-2 rounded shadow mb-2 animate-bounce-in';
+        toast.innerText = msg;
+        container.appendChild(toast);
+        setTimeout(function() { toast.remove(); }, 4000);
+    }
+    </script>
+    <style>
+    @keyframes bounce-in { 0% { transform: scale(0.9); opacity: 0; } 60% { transform: scale(1.05); opacity: 1; } 100% { transform: scale(1); } }
+    .animate-bounce-in { animation: bounce-in 0.5s; }
+    </style>
+</body>
+</html> 

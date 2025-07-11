@@ -1,0 +1,226 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Dashboard - AlkeaTech</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50 text-gray-900">
+    <nav class="bg-white shadow sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center">
+                <img src="https://cdn-icons-png.flaticon.com/512/2721/2721269.png" alt="AlkeaTech Logo" class="h-8 w-8 mr-2"/>
+                <span class="font-bold text-xl text-blue-700">AlkeaTech</span>
+            </div>
+            <div class="space-x-6">
+                <a href="/admin/" class="text-blue-700 font-medium">Django Admin</a>
+                <a href="/admin/dashboard/" class="text-blue-700 font-medium">Admin Dashboard</a>
+                <a href="/" class="text-gray-700 hover:text-blue-700 font-medium">Home</a>
+            </div>
+        </div>
+    </nav>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <main class="max-w-2xl mx-auto px-4 py-8 min-h-screen">
+        <h2 class="text-2xl font-bold text-blue-700 mb-4">Admin Dashboard</h2>
+        <div class="grid grid-cols-2 gap-6 mb-8">
+            <div class="bg-white rounded-lg shadow p-6 text-center">
+                <div class="text-3xl font-bold text-blue-700">{{ stats.students }}</div>
+                <div class="text-gray-700">Students</div>
+            </div>
+            <div class="bg-white rounded-lg shadow p-6 text-center">
+                <div class="text-3xl font-bold text-blue-700">{{ stats.courses }}</div>
+                <div class="text-gray-700">Courses</div>
+            </div>
+            <div class="bg-white rounded-lg shadow p-6 text-center">
+                <div class="text-3xl font-bold text-blue-700">{{ stats.offices }}</div>
+                <div class="text-gray-700">Offices</div>
+            </div>
+            <div class="bg-white rounded-lg shadow p-6 text-center">
+                <div class="text-3xl font-bold text-blue-700">{{ stats.menus }}</div>
+                <div class="text-gray-700">Menu Items</div>
+            </div>
+        </div>
+        <div class="mb-8">
+            {% if notifications %}
+            <div class="bg-yellow-100 border border-yellow-400 text-yellow-800 px-4 py-3 rounded mb-4">
+                <div class="font-semibold mb-2">Notifications</div>
+                <ul>
+                    {% for n in notifications %}
+                    <li>{{ n.message }} <span class="text-xs text-gray-500">({{ n.created|date:"Y-m-d H:i" }})</span></li>
+                    {% endfor %}
+                </ul>
+                <form method="post" class="mt-2">
+                    {% csrf_token %}
+                    <button type="submit" name="mark_notifications_read" value="1" class="bg-yellow-600 text-white px-3 py-1 rounded">Mark all as read</button>
+                </form>
+            </div>
+            {% endif %}
+        </div>
+        <div class="mb-8">
+            <h3 class="text-lg font-semibold mb-2">Analytics</h3>
+            <div class="bg-white rounded-lg shadow p-4 mb-4">
+                <canvas id="courseChart" height="120"></canvas>
+            </div>
+            <div class="flex gap-4 mb-4">
+                <div class="bg-white rounded-lg shadow p-4 flex-1">
+                    <canvas id="verifyPie" height="120"></canvas>
+                </div>
+                <div class="bg-white rounded-lg shadow p-4 flex-1">
+                    <canvas id="regLine" height="120"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="mb-8">
+            <h3 class="text-lg font-semibold mb-2">Admin Actions</h3>
+            <form method="post" class="mb-4 bg-white rounded-lg shadow p-4">
+                {% csrf_token %}
+                <input type="hidden" name="bulk_email" value="1"/>
+                <div class="mb-2">
+                    <label class="block font-medium">Subject</label>
+                    <input type="text" name="subject" class="w-full border rounded px-2 py-1" required/>
+                </div>
+                <div class="mb-2">
+                    <label class="block font-medium">Message</label>
+                    <textarea name="message" class="w-full border rounded px-2 py-1" rows="3" required></textarea>
+                </div>
+                <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Send Bulk Email</button>
+                {% if bulk_email_msg %}
+                <div class="mt-2 text-green-700">{{ bulk_email_msg }}</div>
+                {% endif %}
+            </form>
+            <a href="/admin/export-students/" class="bg-green-600 text-white px-4 py-2 rounded inline-block">Export Students as CSV</a>
+        </div>
+        <div class="mb-8">
+            <h3 class="text-lg font-semibold mb-2">Search/Filter Students</h3>
+            <form method="get" class="flex flex-wrap gap-2 items-end mb-4">
+                <div>
+                    <label class="block text-xs font-medium">Name/Email</label>
+                    <input type="text" name="search" value="{{ search_query }}" class="border rounded px-2 py-1" placeholder="Search..."/>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium">Course</label>
+                    <select name="filter_course" class="border rounded px-2 py-1">
+                        <option value="">All</option>
+                        {% for c in courses_all %}
+                        <option value="{{ c.id }}" {% if filter_course|default:'' == c.id|stringformat:'s' %}selected{% endif %}>{{ c.title }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium">Verified</label>
+                    <select name="filter_verified" class="border rounded px-2 py-1">
+                        <option value="">All</option>
+                        <option value="verified" {% if filter_verified == 'verified' %}selected{% endif %}>Verified</option>
+                        <option value="unverified" {% if filter_verified == 'unverified' %}selected{% endif %}>Unverified</option>
+                    </select>
+                </div>
+                <button type="submit" class="bg-blue-600 text-white px-3 py-1 rounded">Apply</button>
+            </form>
+        </div>
+        <div class="mb-8">
+            <h3 class="text-lg font-semibold mb-2">Send Message to Student</h3>
+            <form method="post" class="mb-4 bg-white rounded-lg shadow p-4">
+                {% csrf_token %}
+                <input type="hidden" name="send_message" value="1"/>
+                <div class="mb-2">
+                    <label class="block font-medium">Recipient</label>
+                    <select name="recipient_id" class="w-full border rounded px-2 py-1" required>
+                        <option value="">Select student</option>
+                        {% for s in students %}
+                        <option value="{{ s.id }}">{{ s.name }} ({{ s.email }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="mb-2">
+                    <label class="block font-medium">Subject</label>
+                    <input type="text" name="msg_subject" class="w-full border rounded px-2 py-1" required/>
+                </div>
+                <div class="mb-2">
+                    <label class="block font-medium">Message</label>
+                    <textarea name="msg_body" class="w-full border rounded px-2 py-1" rows="3" required></textarea>
+                </div>
+                <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Send Message</button>
+                {% if message_sent %}
+                <div class="mt-2 text-green-700">{{ message_sent }}</div>
+                {% endif %}
+            </form>
+        </div>
+        <div class="mb-8">
+            <h3 class="text-lg font-semibold mb-2">Recent Registrations</h3>
+            <ul>
+                {% for student in recent_students %}
+                <li>{{ student.name }} ({{ student.email }})</li>
+                {% empty %}
+                <li>No recent students.</li>
+                {% endfor %}
+            </ul>
+        </div>
+        <div>
+            <h3 class="text-lg font-semibold mb-2">Most Popular Courses</h3>
+            <ul>
+                {% for course in popular_courses %}
+                <li>{{ course.title }} ({{ course.num_students }} students)</li>
+                {% empty %}
+                <li>No course data.</li>
+                {% endfor %}
+            </ul>
+        </div>
+        <div class="mb-8">
+            <h3 class="text-lg font-semibold mb-2">Recent Student Activity</h3>
+            <ul>
+                {% for log in activity_logs %}
+                <li>{{ log.created|date:"Y-m-d H:i" }} - <b>{{ log.student.name }}</b>: {{ log.action }} <span class="text-xs text-gray-500">{{ log.details }}</span></li>
+                {% empty %}
+                <li>No recent activity.</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </main>
+    <script>
+        // Students per course
+        new Chart(document.getElementById('courseChart').getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: {{ course_labels|safe }},
+                datasets: [{
+                    label: 'Students per Course',
+                    data: {{ course_counts|safe }},
+                    backgroundColor: 'rgba(37, 99, 235, 0.5)',
+                    borderColor: 'rgba(37, 99, 235, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {responsive: true, plugins: {legend: {display: false}}}
+        });
+        // Verified/unverified pie
+        new Chart(document.getElementById('verifyPie').getContext('2d'), {
+            type: 'pie',
+            data: {
+                labels: ['Verified', 'Unverified'],
+                datasets: [{
+                    data: [{{ verified_count }}, {{ unverified_count }}],
+                    backgroundColor: ['#22c55e', '#f87171']
+                }]
+            },
+            options: {responsive: true}
+        });
+        // Registrations over time
+        new Chart(document.getElementById('regLine').getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: {{ reg_dates|safe }},
+                datasets: [{
+                    label: 'Registrations',
+                    data: {{ reg_counts|safe }},
+                    fill: false,
+                    borderColor: '#2563eb',
+                    tension: 0.1
+                }]
+            },
+            options: {responsive: true}
+        });
+    </script>
+</body>
+</html> 
