@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Course, Office, Student, MenuItem
+from .models import Course, Office, Student, MenuItem, Project
 
 class CourseSerializer(serializers.ModelSerializer):
     class Meta:
@@ -19,4 +19,9 @@ class StudentSerializer(serializers.ModelSerializer):
 class MenuItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = MenuItem
+        fields = '__all__'
+
+class ProjectSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Project
         fields = '__all__' 

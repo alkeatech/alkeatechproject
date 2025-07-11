@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -118,8 +119,11 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
 STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'static'),
+]
 MEDIA_URL = '/media/'
-import os
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # Default primary key field type
@@ -127,14 +131,35 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# Email Configuration
 DEFAULT_FROM_EMAIL = 'noreply@alkeatech.com'
+
+# Development: Console backend (emails printed to console)
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
-# SMTP email settings for production (uncomment and fill in your credentials)
+# Production: Gmail SMTP settings (uncomment and configure for real email sending)
 # EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 # EMAIL_HOST = 'smtp.gmail.com'
 # EMAIL_PORT = 587
-# EMAIL_HOST_USER = 'your_email@gmail.com'
-# EMAIL_HOST_PASSWORD = 'your_app_password'
+# EMAIL_HOST_USER = 'your_email@gmail.com'  # Replace with your Gmail
+# EMAIL_HOST_PASSWORD = 'your_app_password'  # Replace with your app password
 # EMAIL_USE_TLS = True
+# EMAIL_USE_SSL = False
 # DEFAULT_FROM_EMAIL = 'your_email@gmail.com'
+
+# Alternative: Use a service like SendGrid or Mailgun
+# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+# EMAIL_HOST = 'smtp.sendgrid.net'
+# EMAIL_PORT = 587
+# EMAIL_HOST_USER = 'apikey'
+# EMAIL_HOST_PASSWORD = 'your_sendgrid_api_key'
+# EMAIL_USE_TLS = True
+
+# Captcha Configuration
+CAPTCHA_LENGTH = 6
+CAPTCHA_FONT_SIZE = 30
+CAPTCHA_BACKGROUND_COLOR = '#ffffff'
+CAPTCHA_FOREGROUND_COLOR = '#001a33'
+CAPTCHA_NOISE_FUNCTIONS = ('captcha.helpers.noise_dots',)
+CAPTCHA_CHALLENGE_FUNCT = 'captcha.helpers.math_challenge'
+CAPTCHA_TIMEOUT = 1  # minutes

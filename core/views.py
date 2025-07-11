@@ -1,19 +1,18 @@
 from django.shortcuts import render, redirect
 from rest_framework import viewsets
-from .models import Course, Office, Student, MenuItem, Notification, Message, ActivityLog, CourseCompletion
-from .serializers import CourseSerializer, OfficeSerializer, StudentSerializer, MenuItemSerializer
+from .models import Course, Office, Student, MenuItem, Notification, Message, ActivityLog, CourseCompletion, StudentNotification, Project
+from .serializers import CourseSerializer, OfficeSerializer, StudentSerializer, MenuItemSerializer, ProjectSerializer
 from django.contrib import messages
 from django.core.mail import send_mail
 from django.conf import settings
-from django.contrib.auth import authenticate
 from django.contrib.admin.views.decorators import staff_member_required
-from django.db import models
-from django.core.signing import TimestampSigner, BadSignature, SignatureExpired
-import uuid
-import csv
-from django.http import HttpResponse, FileResponse, Http404
+from django.http import Http404, HttpResponse
 from django.utils import timezone
 from datetime import timedelta
+from django.db import models
+from django.core.signing import TimestampSigner
+import uuid
+import csv
 
 signer = TimestampSigner()
 
@@ -34,11 +33,16 @@ class MenuItemViewSet(viewsets.ModelViewSet):
     queryset = MenuItem.objects.all()
     serializer_class = MenuItemSerializer
 
+class ProjectViewSet(viewsets.ModelViewSet):
+    queryset = Project.objects.all()
+    serializer_class = ProjectSerializer
+
 # Frontend Views
 
 def home(request):
     courses = list(Course.objects.all())
     offices = list(Office.objects.all())
+    projects = list(Project.objects.filter(is_active=True))
     from .models import StudentNotification
     notifications = StudentNotification.objects.filter(is_active=True).order_by('-created')
     # Dummy data if empty
@@ -52,7 +56,12 @@ def home(request):
             Office(id=1, name="Main Campus", address="123 Main Road, Lahore, Pakistan"),
             Office(id=2, name="City Branch", address="45 City Center, Karachi, Pakistan"),
         ]
-    return render(request, "core/home.html", {"courses": courses, "offices": offices, "notifications": notifications})
+    if not projects:
+        projects = [
+            Project(id=1, name="E-Commerce Website", title="Modern Online Store", link="https://example.com", description="A full-featured e-commerce platform built with Django and React."),
+            Project(id=2, name="AI Chatbot", title="Intelligent Assistant", link="https://example.com", description="Machine learning-powered chatbot for customer support."),
+        ]
+    return render(request, "core/home.html", {"courses": courses, "offices": offices, "notifications": notifications, "projects": projects})
 
 def course_list(request):
     courses = list(Course.objects.all())
@@ -71,6 +80,18 @@ def register(request):
             Course(id=2, title="Python Programming"),
         ]
     if request.method == "POST":
+        # Validate captcha
+        captcha_key = request.POST.get('captcha_0')
+        captcha_value = request.POST.get('captcha_1')
+        if not captcha_key or not captcha_value:
+            messages.error(request, "Please complete the security verification.")
+            return render(request, "core/register.html", {"courses": courses})
+        
+        # Simple math captcha validation
+        if captcha_key == "simple_math" and captcha_value.strip() != "5":
+            messages.error(request, "Incorrect answer. Please try again.")
+            return render(request, "core/register.html", {"courses": courses})
+        
         name = request.POST.get("name")
         email = request.POST.get("email")
         phone = request.POST.get("phone")
@@ -96,13 +117,31 @@ def register(request):
         ActivityLog.objects.create(student=student, action="Registration", details="Registered with email {}".format(student.email))
         # Send verification email
         verify_url = request.build_absolute_uri(f"/student/verify-email/{token}/")
-        send_mail(
-            subject="AlkeaTech Email Verification",
-            message=f"Click the link to verify your email: {verify_url}",
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[student.email],
-            fail_silently=True,
-        )
+        try:
+            send_mail(
+                subject="AlkeaTech Email Verification",
+                message=f"""Welcome to AlkeaTech!
+
+Thank you for registering with us. To complete your registration, please click the link below to verify your email address:
+
+{verify_url}
+
+If you didn't create this account, please ignore this email.
+
+Best regards,
+AlkeaTech Team""",
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[student.email],
+                fail_silently=False,
+            )
+            # Log successful email sending
+            ActivityLog.objects.create(student=student, action="Email Sent", details=f"Verification email sent to {student.email}")
+        except Exception as e:
+            # Log email sending failure
+            ActivityLog.objects.create(student=student, action="Email Failed", details=f"Failed to send verification email: {str(e)}")
+            messages.warning(request, "Registration successful! However, there was an issue sending the verification email. Please contact support.")
+            return redirect("register")
+        
         # Create admin notification
         Notification.objects.create(message=f"New student registered: {student.name} ({student.email})")
         messages.success(request, "Registration successful! Please check your email to verify your account.")
@@ -365,3 +404,58 @@ def student_certificate_download(request, course_id):
         return FileResponse(completion.certificate_pdf.open('rb'), as_attachment=True, filename=f"certificate_{completion.student.id}_{completion.course.id}.pdf")
     except CourseCompletion.DoesNotExist:
         raise Http404
+
+def projects(request):
+    projects = list(Project.objects.filter(is_active=True))
+    if not projects:
+        projects = [
+            Project(id=1, name="E-Commerce Website", title="Modern Online Store", link="https://example.com", description="A full-featured e-commerce platform built with Django and React."),
+            Project(id=2, name="AI Chatbot", title="Intelligent Assistant", link="https://example.com", description="Machine learning-powered chatbot for customer support."),
+            Project(id=3, name="Mobile App", title="Cross-Platform Solution", link="https://example.com", description="React Native mobile application for iOS and Android."),
+        ]
+    return render(request, "core/projects.html", {"projects": projects})
+
+def resend_verification_email(request):
+    if request.method == "POST":
+        email = request.POST.get("email")
+        phone = request.POST.get("phone")
+        try:
+            student = Student.objects.get(email=email, phone=phone)
+            if student.is_verified:
+                messages.info(request, "Your email is already verified.")
+                return redirect("student_login")
+            
+            # Generate new token
+            token = str(uuid.uuid4())
+            student.email_verification_token = token
+            student.save()
+            
+            # Send new verification email
+            verify_url = request.build_absolute_uri(f"/student/verify-email/{token}/")
+            try:
+                send_mail(
+                    subject="AlkeaTech Email Verification (Resent)",
+                    message=f"""Hello {student.name},
+
+You requested a new verification email. Please click the link below to verify your email address:
+
+{verify_url}
+
+If you didn't request this email, please ignore it.
+
+Best regards,
+AlkeaTech Team""",
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=[student.email],
+                    fail_silently=False,
+                )
+                ActivityLog.objects.create(student=student, action="Email Resent", details=f"Verification email resent to {student.email}")
+                messages.success(request, "Verification email has been resent. Please check your inbox.")
+            except Exception as e:
+                ActivityLog.objects.create(student=student, action="Email Resend Failed", details=f"Failed to resend verification email: {str(e)}")
+                messages.error(request, "Failed to send verification email. Please try again later.")
+            
+        except Student.DoesNotExist:
+            messages.error(request, "No account found with the provided email and phone number.")
+    
+    return render(request, "core/resend_verification.html")

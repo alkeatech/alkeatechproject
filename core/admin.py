@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Course, Office, Student, MenuItem, Notification, Message, ActivityLog, CourseCompletion, StudentNotification
+from .models import Course, Office, Student, MenuItem, Notification, Message, ActivityLog, CourseCompletion, StudentNotification, Project
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 from django.core.files.base import ContentFile
@@ -100,3 +100,11 @@ class StudentNotificationAdmin(admin.ModelAdmin):
     list_filter = ('is_active',)
     search_fields = ('title', 'body')
     ordering = ('-created',)
+
+@admin.register(Project)
+class ProjectAdmin(admin.ModelAdmin):
+    list_display = ['name', 'title', 'link', 'is_active', 'created']
+    list_filter = ['is_active', 'created']
+    search_fields = ['name', 'title', 'description']
+    list_editable = ['is_active']
+    readonly_fields = ['created', 'updated']

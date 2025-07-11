@@ -111,3 +111,19 @@ class StudentNotification(models.Model):
 
     def __str__(self):
         return self.title
+
+class Project(models.Model):
+    name = models.CharField(max_length=200)
+    title = models.CharField(max_length=200)
+    link = models.URLField(blank=True, null=True)
+    image = models.ImageField(upload_to='projects/', blank=True, null=True)
+    description = models.TextField(blank=True)
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
+    is_active = models.BooleanField(default=True)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        ordering = ['-created']
