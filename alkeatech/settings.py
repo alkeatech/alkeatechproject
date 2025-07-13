@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-x0g&*1gxgt8hr)%ddw^2r36pxi4(15cs(b#d2yh=t(emp6m57c
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['alkeatech.com', 'www.alkeatech.com', ' 44.201.74.159', 'localhost', '127.0.0.1']
 
 
 # Application definition
@@ -39,7 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
-    'django-extensions',
+    'django_extensions',
     'core',
 ]
 
